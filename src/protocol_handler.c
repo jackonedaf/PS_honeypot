@@ -13,6 +13,7 @@
 #include "../include/whitelist.h"
 #include "../include/utils.h"
 #include "../include/suspicion_tracker.h"
+#include "../include/http_responses.h"
 
 int is_suspicious_http_request(const char *request) {
     if (!request) return 0;
@@ -56,6 +57,12 @@ int is_suspicious_http_request(const char *request) {
         log_message("Suspiciously short HTTP request");
         return 1;
     }
+    
+    if (strstr(request, "sqlmap") || strstr(request, "Nikto") || strstr(request, "curl") || strstr(request, "wget") || strstr(request, "nmap")) {
+        log_message("Suspicious User-Agent detected");
+        return 1;
+    }
+
 
     return 0; // nie jest podejrzane
 }
@@ -69,6 +76,7 @@ void handle_http_request(int client_sock, const struct sockaddr_in *client_addr)
     }
     log_connection_details(client_addr, "HTTP", buffer);
     buffer[bytes_received] = '\0'; // Null-terminate the received data
+    
     log_message("Received HTTP request");
 
     char client_ip[INET_ADDRSTRLEN];
@@ -87,9 +95,17 @@ void handle_http_request(int client_sock, const struct sockaddr_in *client_addr)
     }
 
     
-    const char *HTTP_BANNER = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<h1>Welcome to the Honeypot</h1>";
-    send(client_sock, HTTP_BANNER, strlen(HTTP_BANNER), 0);
-    
+    if (strstr(buffer, "GET /robots.txt")) {
+        send(client_sock, HTTP_ROBOTS, strlen(HTTP_ROBOTS), 0);
+        log_message("Served fake robots.txt");
+    } else if (strstr(buffer, "GET /favicon.ico")) {
+        send(client_sock, HTTP_NOT_FOUND, strlen(HTTP_NOT_FOUND), 0);
+        log_message("Favicon requested");
+    } else {
+        const char *HTTP_BANNER = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<h1>Welcome to the Honeypot</h1>";
+        send(client_sock, HTTP_BANNER, strlen(HTTP_BANNER), 0);
+    }
+
     close(client_sock);
 }
 void handle_ssh_request(int client_sock) {

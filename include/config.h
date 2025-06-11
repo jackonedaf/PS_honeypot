@@ -1,8 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define PORT_HTTP 80
-#define PORT_SSH 22
+#define PORT_HTTP 8080
+#define PORT_SSH 2222
 
 #define BUFFER_SIZE 1024
 

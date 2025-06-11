@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 static char blacklist[MAX_BLACKLIST_SIZE][INET_ADDRSTRLEN];
-static int blacklist_count = 0;
+int blacklist_count;
 
 void init_blacklist() {
     blacklist_count = 0;

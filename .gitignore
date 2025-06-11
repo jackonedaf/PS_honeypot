@@ -2,3 +2,4 @@ honeypot
 obj/
 logs/
 .vscode/
+build/
