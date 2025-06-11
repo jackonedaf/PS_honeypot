@@ -58,6 +58,7 @@ int start_honeypot() {
 
             char ip_str[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &client_addr.sin_addr, ip_str, sizeof(ip_str));
+            log_connection(ip_str, ntohs(client_addr.sin_port), fd == sock_http ? "HTTP" : (fd == sock_ssh ? "SSH" : "Telnet"));
 
             if (is_blacklisted(ip_str)) {
                 log_message("Blocked blacklisted IP");

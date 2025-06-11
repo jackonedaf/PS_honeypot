@@ -6,7 +6,7 @@
 #define TIME_FORMAT "%Y-%m-%d %H:%M:%S"
 
 void log_connection(const char *ip, int port, const char *protocol) {
-    FILE *log_file = fopen("/logs/honeypot.log", "w");
+    FILE *log_file = fopen("/home/abrzykcy/PS/Honeypot/logs/honeypot.log", "w");
     if (log_file == NULL) {
         perror("Failed to open log file");
         return;
@@ -16,6 +16,7 @@ void log_connection(const char *ip, int port, const char *protocol) {
     char time_buffer[26];
     strftime(time_buffer, sizeof(time_buffer), TIME_FORMAT, tm_info);
     fprintf(log_file, "[%s] Connection from %s:%d using %s\n",time_buffer, ip, port, protocol);
+    printf("[%s] Connection from %s:%d using %s\n", time_buffer, ip, port, protocol);
     fclose(log_file);
 }
 
