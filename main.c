@@ -63,21 +63,68 @@ void* ssh_thread(void* arg) {
     return NULL;
 }
 
+void* telnet_thread(void* arg) {
+    int sockfd;
+    struct sockaddr_in server_addr;
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        perror("Telnet socket");
+        return NULL;
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(PORT_TELNET);
+
+    if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Telnet bind");
+        close(sockfd);
+        return NULL;
+    }
+
+    if (listen(sockfd, 10) < 0) {
+        perror("Telnet listen");
+        close(sockfd);
+        return NULL;
+    }
+
+    log_message("Telnet honeypot listening...");
+
+    while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t len = sizeof(client_addr);
+        int client_sock = accept(sockfd, (struct sockaddr*)&client_addr, &len);
+        if (client_sock >= 0) {
+            handle_telnet_request(client_sock);
+        }
+    }
+
+    close(sockfd);
+    return NULL;
+}
+
+
 int main() {
     log_message("Honeypot starting...");
-
-    start_honeypot();
-
+    
     init_blacklist();
     init_whitelist();
+    
+    start_honeypot();
 
-    pthread_t http_tid, ssh_tid;
+   
+
+    pthread_t http_tid, ssh_tid, telnet_tid;
 
     pthread_create(&http_tid, NULL, http_thread, NULL);
     pthread_create(&ssh_tid, NULL, ssh_thread, NULL);
+    pthread_create(&telnet_tid, NULL, telnet_thread, NULL);
 
     pthread_join(http_tid, NULL);
     pthread_join(ssh_tid, NULL);
+    pthread_join(telnet_tid, NULL);
+    
 
     return 0;
 }

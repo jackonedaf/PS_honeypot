@@ -67,6 +67,79 @@ int is_suspicious_http_request(const char *request) {
     return 0; // nie jest podejrzane
 }
 
+int is_suspicious_ssh_request(const char *request) {
+    if (!request) return 0;
+
+    struct {
+        const char *pattern;
+        const char *description;
+    } suspicious_patterns[] = {
+        {"root", "root"},
+        {"admin", "admin"},
+        {"password", "password"},
+        {"ssh2", "ssh2"},
+        {"OpenSSH_", "OpenSSH_"},
+        {"exploit", "exploit"},
+        {"masscan", "masscan"},
+        {"nmap", "nmap"},
+        {"hydra", "hydra"},
+    };
+
+    for (int i = 0; i < sizeof(suspicious_patterns)/sizeof(suspicious_patterns[0]); ++i) {
+        if (strstr(request, suspicious_patterns[i].pattern)) {
+            char logbuf[256];
+            snprintf(logbuf, sizeof(logbuf), "Suspicious SSH string detected: %s", suspicious_patterns[i].description);
+            log_message(logbuf);
+            return 1;
+        }
+    }
+
+    if (strlen(request) < 5) {
+        log_message("Suspiciously short SSH data detected");
+        return 1;
+    }
+
+    return 0;
+}
+
+int is_suspicious_telnet_request(const char *request) {
+    if (!request) return 0;
+
+    struct {
+        const char *pattern;
+        const char *description;
+    } suspicious_patterns[] = {
+        {"root", "root"},
+        {"admin", "admin"},
+        {"1234", "1234"},
+        {"telnet", "telnet"},
+        {"shell", "shell"},
+        {"sh", "sh"},
+        {"wget", "wget"},
+        {"tftp", "tftp"},
+        {"busybox", "busybox"},
+        {"bin/busybox", "bin/busybox"},
+        {"password", "password"},
+        {"login", "login"},
+    };
+
+    for (int i = 0; i < sizeof(suspicious_patterns)/sizeof(suspicious_patterns[0]); ++i) {
+        if (strstr(request, suspicious_patterns[i].pattern)) {
+            char logbuf[256];
+            snprintf(logbuf, sizeof(logbuf), "Suspicious Telnet content detected: %s", suspicious_patterns[i].description);
+            log_message(logbuf);
+            return 1;
+        }
+    }
+
+    if (strlen(request) < 5) {
+        log_message("Suspiciously short Telnet input detected");
+        return 1;
+    }
+
+    return 0;
+}
+
 void handle_http_request(int client_sock, const struct sockaddr_in *client_addr) {
     char buffer[BUFFER_SIZE];
     int bytes_received = recv(client_sock, buffer, sizeof(buffer) - 1, 0);
@@ -77,7 +150,6 @@ void handle_http_request(int client_sock, const struct sockaddr_in *client_addr)
     log_connection_details(client_addr, "HTTP", buffer);
     buffer[bytes_received] = '\0'; // Null-terminate the received data
     
-    log_message("Received HTTP request");
 
     char client_ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &client_addr->sin_addr, client_ip, sizeof(client_ip));
@@ -90,8 +162,12 @@ void handle_http_request(int client_sock, const struct sockaddr_in *client_addr)
         return;
     }
     if(is_suspicious_http_request(buffer)){
-        log_message("Suspicious HTTP request detected");
+        log_message("Received HTTP request");
+        log_message("Suspicious HTTP \r\n");
         register_suspicious_attempt(client_ip);
+    }
+    else {
+        log_message("Received HTTP request\r\n");
     }
 
     
@@ -115,16 +191,41 @@ void handle_ssh_request(int client_sock) {
         perror("recv");
         return;
     }
-    
-    buffer[bytes_received] = '\0'; // Null-terminate the received data
-    log_message("Received SSH request");
-    
-    // Here you would parse the SSH request and send a response
-    // For example:
-    // send(client_sock, SSH_RESPONSE, strlen(SSH_RESPONSE), 0);
-    
+
+    buffer[bytes_received] = '\0'; // Null-terminate
+
+    // Pobierz IP klienta
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    getpeername(client_sock, (struct sockaddr*)&client_addr, &addr_len);
+    char client_ip[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
+
+    if (is_blacklisted(client_ip)) {
+        log_message("Blocked SSH request from blacklisted IP");
+        close(client_sock);
+        return;
+    }
+
+    log_connection_details(&client_addr, "SSH", buffer);
+
+    if (is_suspicious_ssh_request(buffer)) {
+        log_message("Received SSH request");
+        log_message("Suspicious SSH request detected\r\n");
+        register_suspicious_attempt(client_ip);
+    }
+    else {
+        log_message("Received SSH request\r\n");
+    }
+
+    // Możesz odpowiedzieć "fałszywym" bannerem
+    const char *fake_banner = "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5\r\n";
+    send(client_sock, fake_banner, strlen(fake_banner), 0);
+
     close(client_sock);
+
 }
+
 
 void handle_telnet_request(int client_sock) {
     char buffer[BUFFER_SIZE];
@@ -133,13 +234,47 @@ void handle_telnet_request(int client_sock) {
         perror("recv");
         return;
     }
-    
-    buffer[bytes_received] = '\0'; // Null-terminate the received data
-    log_message("Received Telnet request");
-    
-    // Here you would parse the Telnet request and send a response
-    // For example:
-    // send(client_sock, TELNET_RESPONSE, strlen(TELNET_RESPONSE), 0);
-    
+
+    buffer[bytes_received] = '\0';
+
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    getpeername(client_sock, (struct sockaddr*)&client_addr, &addr_len);
+    char client_ip[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
+
+    if (is_blacklisted(client_ip)) {
+        log_message("Blocked Telnet request from blacklisted IP");
+        close(client_sock);
+        return;
+    }
+
+    log_connection_details(&client_addr, "Telnet", buffer);
+
+    if (is_suspicious_telnet_request(buffer)) {
+        log_message("Received Telnet request");
+        log_message("Suspicious Telnet request detected\r\n");
+        register_suspicious_attempt(client_ip);
+    }
+    else{
+        log_message("Received Telnet request\r\n");
+
+    }
+    // Fałszywy login prompt
+    const char *login_prompt = "login: ";
+    send(client_sock, login_prompt, strlen(login_prompt), 0);
+
+    // Opcjonalnie odczyt hasła
+    int pass_bytes = recv(client_sock, buffer, sizeof(buffer) - 1, 0);
+    if (pass_bytes > 0) {
+        buffer[pass_bytes] = '\0';
+        log_message("Telnet password attempt logged");
+        log_connection_details(&client_addr, "Telnet-Password", buffer);
+    }
+
+    //const char *denied = "\nLogin incorrect\n";
+    //send(client_sock, denied, strlen(denied), 0);
+
     close(client_sock);
+
 }

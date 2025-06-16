@@ -8,25 +8,6 @@
 #include "../include/config.h"
 #include "../include/logger.h"
 
-void log_connection_details(const struct sockaddr_in *addr, const char *protocol, const char *payload) {
-    char timestamp[64];
-    char ip_str[INET_ADDRSTRLEN];
-
-    get_timestamp(timestamp, sizeof(timestamp));
-    get_ip_str(addr, ip_str, sizeof(ip_str));
-
-    char log_msg[1024];
-    snprintf(log_msg, sizeof(log_msg),
-             "[%s] %s connection from %s:%d | Payload: %.200s",
-             timestamp,
-             protocol,
-             ip_str,
-             ntohs(addr->sin_port),
-             payload ? payload : "<no data>");
-
-    log_message(log_msg);
-}
-
 
 void get_timestamp(char *buffer, size_t size) {
     time_t now = time(NULL);

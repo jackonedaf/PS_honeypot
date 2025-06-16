@@ -3,6 +3,7 @@
 
 #define PORT_HTTP 8080
 #define PORT_SSH 2222
+#define PORT_TELNET 2323
 
 #define BUFFER_SIZE 1024
 

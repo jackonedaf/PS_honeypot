@@ -1,6 +1,8 @@
 #include <netinet/in.h>
 #include "../include/whitelist.h"
 #include<string.h>
+#include<stdio.h>
+#include "../include/logger.h"
 
 WhiteListEntry whitelist[MAX_WHITELIST];
 int whitelist_count = 0;
@@ -21,6 +23,7 @@ int is_whitelisted(const char *ip_addr) {
     // This function checks if an IP address is in the whitelist.
     // For simplicity, we will just print the action and return 1 (true).
     for(int i=0;i<whitelist_count;i++){
+        log_message(ip_addr);
         if (strcmp(whitelist[i].ip, ip_addr) == 0){
             return 1; // Return 1 (true) if found
         }

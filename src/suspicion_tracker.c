@@ -7,9 +7,6 @@
 #include "../include/blacklist.h"
 #include "../include/logger.h"
 
-#define MAX_SUSPICIOUS_ENTRIES 100
-#define SUSPICIOUS_THRESHOLD 3
-#define SUSPICIOUS_WINDOW_SEC 300  // 5 minut
 
 typedef struct {
     char ip[INET_ADDRSTRLEN];
