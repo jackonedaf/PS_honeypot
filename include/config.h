@@ -10,6 +10,6 @@
 #define BANNER_HTTP "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
 #define BANNER_SSH "SSH-2.0-OpenSSH_8.2p1 Ubuntu\r\n"
 
-#define LOG_FILE "/home/abrzykcy/PS/Honeypot/logs/honeypot.log"
+#define LOG_FILE "" //scieżka do pliku logów
 
 #endif

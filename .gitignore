@@ -3,4 +3,3 @@ obj/
 logs/
 .vscode/
 build/
-*.py
