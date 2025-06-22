@@ -37,11 +37,30 @@ Celem jest wykrywanie i rejestrowanie podejrzanych połączeń oraz zachowań na
 
 ---
 
-## 💻 Kompilacja i uruchamianie
+## 📦 Wymagania
 
-Projekt korzysta z prostego `Makefile`.
+- GCC / Clang
+- CMake 3.10+
+- system Linux / WSL / MacOS
+- make (lub Ninja)
+
+---
+
+## 🔧 Kompilacja (z użyciem CMake)
 
 ```bash
+# 1. Sklonuj repozytorium (jeśli potrzebne)
+git clone <adres-repo>
+cd <folder-z-projektem>
+
+# 2. Utwórz katalog do budowania
+mkdir build
+cd build
+
+# 3. Wygeneruj pliki Makefile
+cmake ..
+
+# 4. Zbuduj projekt
 make
 ```
 
